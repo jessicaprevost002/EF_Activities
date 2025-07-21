@@ -9,7 +9,6 @@ library(rjags)
 library(coda)
 ```
 
-
 # Introduction
 
 The aim of this activity is to provide a tutorial on JAGS (Just Another Gibbs Sampler), a statistical software package designed specifically to do Bayesian analyses of simple to intermediate complexity using Markov Chain Monte Carlo (MCMC) numerical simulation methods. JAGS is one of a set of generalized software tools for doing Bayesian computation, with BUGS, NIMBLE, and STAN being other popular options. These tools use very similar and simple scripting languages that focus on specifying data and process models. The great thing about these tools is that they keeps a lot of the mathematical and computational details "under the hood" so that you can focus on the structure of your model at a high level rather than being bogged down in the details. Also, since JAGS is designed just to do Bayesian MCMC computation it is very efficient at this, which is nice since Bayesian MCMC computations can be time consuming. In this tutorial we will work through the basics of using JAGS: writing and compiling a model, loading data, executing the model, and evaluating the numerical output of the model.
@@ -38,11 +37,11 @@ Which is here written in matrix notation: $y$ is the vector of observations of t
 
 Since this is a Bayesian regression, we also need to specify priors on all of our parameters, which are often set to a multivariate Normal prior on the vector of regression parameters (length $p$), and an Inverse Gamma prior on the variance:
 
-$$P(b) = N_p(b \vert b_0, V_b)$$ 
+$$P(b) = N_p(b \vert b_0, V_b)$$
 
 $$P(\sigma^2) = IG(\sigma^2 \vert s_1,s_2)$$
 
-As a reminder, a Normal prior is not used on the variance because variances must be non-negative. The inverse gamma prior on the variance (equivalent to a gamma prior on the precision) has the advantage of being conjugate and having relatively interpretable parameters (`s_1` and `s_2` are proportional to the prior sample size and sum of squares, respectively; see Box 5.1). Putting things together (Likelihood * prior), our full model is:
+As a reminder, a Normal prior is not used on the variance because variances must be non-negative. The inverse gamma prior on the variance (equivalent to a gamma prior on the precision) has the advantage of being conjugate and having relatively interpretable parameters (`s_1` and `s_2` are proportional to the prior sample size and sum of squares, respectively; see Box 5.1). Putting things together (Likelihood \* prior), our full model is:
 
 $$P(b,\sigma^2 \vert X, y) \propto N_n(y \vert Xb,\sigma^2 I) N_p(b \vert b_0, V_b) IG(\sigma^2 \vert s_1,s_2)$$
 
@@ -58,9 +57,9 @@ $$P(\sigma^2 \vert b, X, y) \propto N_p(b \vert b_0, V_b) IG(\sigma^2 \vert s_1,
 
 # A Simple JAGS model
 
-As noted earlier JAGS parameterizes the Normal distribution in terms of a mean and precision (1/variance), rather than a mean and standard deviation. Therefore, let's redefine the prior precision as $P_b = V_b^{-1}$ and the data precision as $S = (\sigma^2I)^{-1} = {{1}\over{\sigma^2}}I$. Let's also switch from the conditional notation for PDFs to the tilde notation (~ is read as "is distributed as"). Given this we can rewrite the above model as:
+As noted earlier JAGS parameterizes the Normal distribution in terms of a mean and precision (1/variance), rather than a mean and standard deviation. Therefore, let's redefine the prior precision as $P_b = V_b^{-1}$ and the data precision as $S = (\sigma^2I)^{-1} = {{1}\over{\sigma^2}}I$. Let's also switch from the conditional notation for PDFs to the tilde notation (\~ is read as "is distributed as"). Given this we can rewrite the above model as:
 
-$$ y \sim N_n( Xb,S) $$ 
+$$ y \sim N_n( Xb,S) $$
 
 $$b \sim N_p(b_0, P_b)$$
 
@@ -68,7 +67,7 @@ $$S \sim Gamma(s_1,s_2)$$
 
 In JAGS the specification of any model begins with the word "model" and then encapsulates the rest of the model code in curly brackets:
 
-```
+```         
 model {
   ## model goes here ##
 }
@@ -76,20 +75,20 @@ model {
 
 When writing models in JAGS we have to specify the data model, process model, and parameter model using the tilde notation. However, we don't need to specify explicitly the connections between them---JAGS figures this out based on the conditional probabilities involved. Deterministic calculations (e.g. process model) always make use of an arrow (`<-`) for assignment (similar to R syntax). Assignment of random variables is always done with a tilde (`~`). **The equal sign (`=`) cannot be used for either process or data models. Furthermore, deterministic calculations and distributions can not be combined in the same line of code.** For example, a regression model where we're trying to predict data y based on observation x might include
 
-```
+```         
 mu <- b1 + b2* x # process model 
 y ~ dnorm(mu,tau) # data model
 ```
 
 but in JAGS the same model can **NOT** be expressed as
 
-```
+```         
 y ~ dnorm(b0 + b1* x, tau)
 ```
 
 Putting this all together, to specify our first model of a normal likelihood and normal prior, the JAGS code is:
 
-```
+```         
 model{
 
   b ~ dmnorm(b0,Pb)     ## multivariate Normal prior on vector of regression params
@@ -106,7 +105,7 @@ The first line of this model specifies the prior on the regression coefficients 
 
 Hopefully the above JAGS code seems pretty clear. However there are a few quirks to how JAGS evaluates a model, some of which are just idiosyncrasies (like no `=`) while others are deeply embedded in the logic but often misleading to newcomers. One of the more disorienting features is that, because JAGS isn't evaluating the code sequentially, the order of the code doesn't matter---the above model is equivalent to
 
-```
+```         
 model {
 
  for(i in 1:n){
@@ -300,7 +299,9 @@ After discarding burn-in, you should work with the trimmed object for subsequent
 
 If the MCMC hasn't converged by the end, if you need additional samples, or if you want to add or remove variables from your output, you can take additional samples by simply calling `coda.samples` again.
 
-    jags.out2 <- coda.samples(j.model,variable.names = c("b","S"),10000)
+```         
+jags.out2 <- coda.samples(j.model,variable.names = c("b","S"),10000)
+```
 
 Note: the new samples are written to a new variable, not automatically added to the old. If you're working with a slow model where samples are precious you'll want to manually splice the old and new samples together.
 
@@ -371,7 +372,7 @@ hist(SD)
 summary(SD)
 ```
 
-### Task 1 
+### Task 1
 
 -   Evaluate the MCMC chain for convergence. Include relevant diagnostics and plots. Determine and remove burn-in [A]
 -   Report parameter summary table and plot marginal distributions [A]
